@@ -543,14 +543,40 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
+		// 同步锁
 		synchronized (this.startupShutdownMonitor) {
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
 			// Prepare this context for refreshing.
 			prepareRefresh();
+			/*
+			 * 做一些初始化前的准备工作：
+			 * 1.记录启动时间
+			 * 2.设置active
+			 * 3.打印日志
+			 * 4.初始化资源：这是个空实现
+			 * 5.验证必要的资源属性是可解析的
+			 * 6.设置监听器
+			 * 7.初始化事件容器
+			 */
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 获取一个新的beanFactory，注意配置信息在获取工厂时完成读取，但是没注入
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+			/*
+			 * ConfigurableListableBeanFactory有一个beanFactory字段保存着一个工厂
+			 * 为获取一个新的工厂，需要：
+			 * 1.销毁之前的工厂
+			 *   - 销毁工厂内的beans
+			 *   - 销毁工厂
+			 * 2.创建一个新的工厂
+			 *   - 获取beanFactory：
+			 *   - 设置ID
+			 *   - 完成工厂属性的设置：allowBeanDefinitionOverriding和allowCircularReferences
+			 *   - 完成BeanDefinitions的读取：使用BeanDefinitionReader读取配置文件，只读不注入
+			 *   - this.beanFactory = beanFactory
+			 *  3.返回这个beanFactory
+			 */
 
 			// Prepare the bean factory for use in this context.
 			prepareBeanFactory(beanFactory);
@@ -617,10 +643,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
+		// 记录启动时间，并设置标志位active
 		this.startupDate = System.currentTimeMillis();
 		this.closed.set(false);
 		this.active.set(true);
 
+		// 日志行为
 		if (logger.isDebugEnabled()) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Refreshing " + this);
@@ -631,13 +659,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
+		// 初始化资源：空实现
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
+		// 验证environment字段中的必要属性为可解析的
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
+		// 设置监听器
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
@@ -649,13 +680,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Allow for the collection of early ApplicationEvents,
 		// to be published once the multicaster is available...
+		// 初始化事件容器
 		this.earlyApplicationEvents = new LinkedHashSet<>();
 	}
 
 	/**
 	 * <p>Replace any stub property sources with actual instances.
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
-	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
+	 * // @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
+	 * // 红字太碍眼
 	 */
 	protected void initPropertySources() {
 		// For subclasses: do nothing by default.
