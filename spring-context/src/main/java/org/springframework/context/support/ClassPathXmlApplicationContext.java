@@ -85,8 +85,7 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
      * @throws BeansException if context creation failed
      */
     /*
-     * 构造方法：
-     *     将入参包装成String[]，跳转另一个构造方法
+     * 将xml配置文件路径包装进String[]，跳转另一个构造方法
      */
     public ClassPathXmlApplicationContext(String configLocation) throws BeansException {
         this(new String[]{configLocation}, true, null);
@@ -146,38 +145,25 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
      * @see #refresh()
      */
     /*
-     * 使用参数给定的ApplicationContext实例创建一个新容器，并将给定的xml中的definitions注入其中
-     * 可以只读取传入的xml中的信息并创建单例对象
-     * 也可以refresh容器，再进行配置
+     * 总的来说，重要的事情都不是这个类做的，而是它的父类们做的
+     * 这个类只是将该干的事封装了一下，它只干了3件事：
+     * 1.把配置文件的路径提交给父类，让父类创建一个ApplicationContext
+     * 2.将配置文件的路径进行解析，存在自己的configLocations字段中
+     * 3.调用refresh()方法，这个方法也是继承父类的
      */
     public ClassPathXmlApplicationContext(
             String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
             throws BeansException {
 
+        // 调用父类构造器，详情可以看父类AbstractApplicationContext
         super(parent);
-		/*
-		 * 调用父类构造器：
-		 * 1.为字段resourcePatternResolver注入一个
-		PathMatchingResourcePatternResolver实例，用于读取配置文件
-		 * 2.将parent注入this.parent字段，并合并其environment字段，environment字段是
-		一个StandardEnvironment实例，主要是用来解析和存放profile/source的，继承自AbstractEnvironment
-		 *
-		 * 部分类说明：
-         * PropertySource类：有2个重要字段，String name和T source字段，用来封装不同类型source
-		 * AbstractEnvironment类，有4个重要字段：
-		 *  - activeProfiles，是一个LinkedHashSet<String>，放当前生效的profiles
-		 *  - defaultProfiles，是一个LinkedHashSet<String>，放默认profiles
-		 *  - propertySources，是一个MutablePropertySources实例，拥有线程安全
-		的CopyOnWriteArrayList，用以存放PropertySource
-		 *  - propertyResolver，是ConfigurablePropertyResolver实现类，用于解析配置的
-		 */
 
-        setConfigLocations(configLocations);
         // 将configLocations中的字符串解析为path，并将结果数组注入configLocations字段
+        setConfigLocations(configLocations);
 
+        // refresh()，是一个模板方法，用来初始化一个容器来创建和管理bean
         if (refresh) {
             refresh();
-            // 执行refresh()，总的来说，就是初始化容器并为其注入属性实例化bean的,是一个模板方法
         }
     }
 

@@ -208,11 +208,14 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 */
 	public void setSerializationId(@Nullable String serializationId) {
 		if (serializationId != null) {
+			// 若不为空，就放进map中
 			serializableFactories.put(serializationId, new WeakReference<>(this));
 		}
 		else if (this.serializationId != null) {
+			// 若为空且this.serializationId不为空就移除map中的同key键值对
 			serializableFactories.remove(this.serializationId);
 		}
+		// 将序列ID注入serializationId字段
 		this.serializationId = serializationId;
 	}
 

@@ -119,16 +119,41 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
+
+		// 判断是否存在beanFactory，如果存在就先销毁
 		if (hasBeanFactory()) {
 			destroyBeans();
 			closeBeanFactory();
 		}
+
+		// 创建一个新的beanFactory
 		try {
+			// 调用new DefaultListableBeanFactory()创建一个新的配置信息工厂
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
+
+			// 设置序列ID，并放入DefaultListableBeanFactory实例中，方便反序列化获取此配置信息工厂
 			beanFactory.setSerializationId(getId());
+			/*
+			 * 1.ID：obj.getClass().getName() + "@" + getIdentityHexString(obj)
+			 * 2.DefaultListableBeanFactory实例定义了serializableFactories字段，指向一个map:
+			ConcurrentHashMap<String, Reference<DefaultListableBeanFactory>>
+			 * 3.将序列ID注入到DefaultListableBeanFactory实例的serializationId字段中
+			 */
+
+			// 完成配置信息工厂属性的设置：allowBeanDefinitionOverriding和allowCircularReferences
 			customizeBeanFactory(beanFactory);
+			/*
+			 * 将allowBeanDefinitionOverriding和allowCircularReferences
+			的值注入到用来读取配置信息的工厂中
+			 * 注意：本实例是之后调用getBean()方法的ApplicationContext实例，而new出来的这个
+			DefaultListableBeanFactory是用来读取配置信息的工厂
+			 */
+
+			// 完成BeanDefinitions的读取：使用BeanDefinitionReader读取配置文件，只读不注入
 			loadBeanDefinitions(beanFactory);
+
 			this.beanFactory = beanFactory;
+			// 将新工厂注入到beanFactory字段中
 		}
 		catch (IOException ex) {
 			throw new ApplicationContextException("I/O error parsing bean definition source for " + getDisplayName(), ex);
