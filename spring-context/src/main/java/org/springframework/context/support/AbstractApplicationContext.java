@@ -633,14 +633,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
 
 				// Invoke factory processors registered as beans in the context.
-				// 读取配置工厂的beanFactoryPostProcessors字段指向的List中所有BeanPostProcessors
-				// 按优先级顺序进行注册
+				// *************************************
+				//       【bean实例化前必须要被调用】
+				// *************************************
+				// 处理所有BeanFactoryPostProcessor：注册、获取实例、执行
+				// 添加BeanPostProcessor：LoadTimeWeaverAwareProcessor
 				invokeBeanFactoryPostProcessors(beanFactory);
-				// 【bean实例化前必须要被调用】
-				/*
-				 * 1. 按优先级顺序注册配置工厂beanFactoryPostProcessors字段中所有BeanPostProcessors
-				 * 2. 添加BeanPostProcessor：LoadTimeWeaverAwareProcessor
-				 */
+
 
 				// Register bean processors that intercept bean creation.
 				// 注册BeanPostProcessors
@@ -877,6 +876,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 读取配置工厂的beanFactoryPostProcessors字段指向的List中所有BeanPostProcessors
 		// 按优先级顺序进行注册
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+		/*
+		 * invokeBeanFactoryPostProcessors()方法：
+		 *
+		 */
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
 		// (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
