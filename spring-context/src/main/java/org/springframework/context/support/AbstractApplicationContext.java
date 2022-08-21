@@ -636,7 +636,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// *************************************
 				//       【bean实例化前必须要被调用】
 				// *************************************
-				// 处理所有BeanFactoryPostProcessor：注册、获取实例、执行
+				// 处理所有BeanFactoryPostProcessor：注册、执行
 				// 添加BeanPostProcessor：LoadTimeWeaverAwareProcessor
 				invokeBeanFactoryPostProcessors(beanFactory);
 

@@ -557,6 +557,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return resolvedBeanNames;
 	}
 
+	// 读取beanDefinitions
 	private String[] doGetBeanNamesForType(ResolvableType type, boolean includeNonSingletons, boolean allowEagerInit) {
 		List<String> result = new ArrayList<>();
 
