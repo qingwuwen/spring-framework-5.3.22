@@ -42,6 +42,13 @@ import org.springframework.lang.Nullable;
  * @author Sam Brannen
  * @since 03.11.2003
  */
+/*
+ * SPI接口将由大多数 (如果不是全部) 应用程序上下文实现。 此外还提供配置应用程序上下文的功能 到中的应用程序上下文客户端方法 ApplicationContext接口。
+ *
+ * 这里封装了配置和生命周期方法，以避免 使它们对ApplicationContext客户端代码显而易见。现在 方法只能由启动和关闭代码使用。
+ *
+ * 自:2003年11月3日
+ */
 public interface ConfigurableApplicationContext extends ApplicationContext, Lifecycle, Closeable {
 
 	/**

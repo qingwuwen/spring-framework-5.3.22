@@ -133,6 +133,21 @@ import org.springframework.util.ReflectionUtils;
  * @see org.springframework.context.ApplicationListener
  * @see org.springframework.context.MessageSource
  */
+/*
+ * ApplicationContext接口的抽象实现。不要求配置所使用的存储类型;简单地实现公共上下文功能。
+ * 使用模板方法设计模式，需要具体的子类来实现抽象方法。
+ *
+ * 与普通的BeanFactory相比，ApplicationContext应该检测在其内部bean工厂中定义的特殊bean:
+ * 因此，这个类自动注册BeanFactoryPostProcessors、BeanPostProcessors和applicationlistener，它们被定义为上下文中的bean。
+ *
+ * MessageSource也可以作为上下文中的bean提供，名称为“MessageSource”;否则，消息解析将被委托给父上下文。
+ * 此外，应用程序事件的多播程序可以作为上下文中类型为applicationEventMulticaster的“applicationEventMulticaster”bean提供;
+ * 否则，将使用SimpleApplicationEventMulticaster类型的默认多播程序。
+ *
+ * 通过扩展DefaultResourceLoader实现资源加载。
+ * 因此，将非url资源路径视为类路径资源(支持包含包路径的完整类路径资源名，例如。"mypackagemyresource.dat")，
+ * 除非getResourceByPath方法在子类中被重写。
+ */
 public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		implements ConfigurableApplicationContext {
 
@@ -566,68 +581,38 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
-		// 同步锁
+
+		// startupShutdownMonitor=new Object()，就是充当锁用的
 		synchronized (this.startupShutdownMonitor) {
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
+
 			// Prepare this context for refreshing.
+			// 做一些初始化前的准备工作，例如记录启动时间，设置活动标识位,设置一些监听器等等
+			// 已注释
 			prepareRefresh();
-			/*
-			 * 做一些初始化前的准备工作：
-			 *  1.记录启动时间
-			 *  2.设置active
-			 *  3.打印日志
-			 *  4.初始化资源：这默认是 空实现
-			 *  5.验证必要的资源属性，确保是可解析的
-			 *  6.设置监听器
-			 *  7.初始化事件容器
-			 */
+
 
 			// Tell the subclass to refresh the internal bean factory.
-			// 获取一个新的用来读取配置文件和环境配置的工厂，并将这个新的工厂注入到beanFactory字段中并返回
-			// 读取beanDefinitions在这一步完成，但是不注入
+			// 获取一个新的DefaultListableBeanFactory并注入到beanFactory字段中
+			// 主要用来读取beanDefinition，只读取，不注入
+			// 已注释AbstractRefreshableApplicationContext.refreshBeanFactory()实现
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
-			/*
-			 * refreshBeanFactory()方法主要是销毁之前的工厂和创建一个新工厂，读取beanDefinitions
-			 *  1.销毁已有的配置工厂
-			 *  2.创建新的配置工厂
-			 *  3.完成配置工厂基本的配置工作
-			 *  4.读取beanDefinitions
-			 *  5.将配置工厂注入到beanFactory字段
-			 *
-			 * 注意：
-			 *  - 创建的新的工厂是DefaultListableBeanFactory实例，主要是用来放元数据的
-			 *  - 这个配置工厂，是AbstractApplicationContext的一部分
-			 *  - 只读取beanDefinitions，不注入
-			 *
-			 * 关于AbstractRefreshableApplicationContext类：
-			 *  - 是AbstractApplicationContext类的子类
-			 *  - beanFactory字段是其定义的字段
-			 *  - refreshBeanFactory()方法由其实现
-			 */
+
 
 			// Prepare the bean factory for use in this context.
-			// 对内部的配置工厂做进一步的设置，主要是添加BeanPostProcessors
+			// 为beanFactory注入StandardBeanExpressionResolver
+			// 为beanFactory注入ResourceEditorRegistrar
+			// 为beanFactory注入一些必要的environment实例
+			// 为beanFactory添加2个BeanPostProcessor：
+			//  - ApplicationListenerDetector
+			//  - LoadTimeWeaverAwareProcessor
 			prepareBeanFactory(beanFactory);
-			/*
-			 * 主要为这个内部的配置工厂注入一些属性和增加一些BeanPostProcessor
-			 *  1. 添加StandardBeanExpressionResolver
-			 *  2. 添加ResourceEditorRegistrar
-			 *  3. 添加BeanPostProcessor：ApplicationContextAwareProcessor，注入到beanFactoryPostProcessors字段
-			 *  4. 注册一些必须的对象:BeanFactory、ResourceLoader、ApplicationEventPublisher
-			和ApplicationContext，
-			 *  5. 添加BeanPostProcessor：ApplicationListenerDetector，注入到beanFactoryPostProcessors字段
-			 *  6. 添加BeanPostProcessor：LoadTimeWeaverAwareProcessor，注入到beanFactoryPostProcessors字段
-			 *  7. 注入一些environment实例
-			 *   - ENVIRONMENT_BEAN_NAME字段对应的bean
-			 *   - SYSTEM_PROPERTIES_BEAN_NAME字段对应的bean
-			 *   - SYSTEM_ENVIRONMENT_BEAN_NAME字段对应的bean
-			 *   - APPLICATION_STARTUP_BEAN_NAME字段对应的bean
-			 */
+
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
-				// 调用postProcessBeanFactory做一些工作，默认是空实现,交由子类实现
+				// 默认是空实现,如果需要对beanFactory进行自定义设置，可以实现此方法
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
@@ -636,54 +621,42 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// *************************************
 				//       【bean实例化前必须要被调用】
 				// *************************************
-				// 处理所有BeanFactoryPostProcessor：注册、执行
+				// 处理所有BeanFactoryPostProcessor：注册、执行、实例化
 				// 添加BeanPostProcessor：LoadTimeWeaverAwareProcessor
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 
 				// Register bean processors that intercept bean creation.
-				// 注册BeanPostProcessors
+				// 注册所有的BeanPostProcessor，只是注册
 				registerBeanPostProcessors(beanFactory);
-				/*
-				 * 注册BeanPostProcessors：
-				 *  1. 创建多个List<BeanPostProcessor>，用来实现PriorityOrdered队列、
-				Ordered队列、nonOrdered队列和internal队列
-				 *  2. 向队列中添加符合条件的BeanPostProcessor，用于之后的注册
-				 *  3. 注册顺序为：PriorityOrdered > Ordered > nonOrdered > internal
-				 *
-				 * 注意：
-				 *  - 每个队列注册时会先排序：使用一个比较器进行排序，比较器可以重写
-				 */
-
-				// 执行BeanPostProcessors的生命周期方法end()
 				beanPostProcess.end();
 
+
 				// Initialize message source for this context.
-				// 注意：此步骤被spring添加了注释：bean实例化前必须要被调用
+				// 初始化MessageSource，是i18n相关的
 				initMessageSource();
-				/*
-				 * 获取内部工厂,并实例化其MESSAGE_SOURCE_BEAN_NAME字段对应的MessageSource
-				 * 如果没有指定的MessageSource，new一个DelegatingMessageSource实例去接收消息调用
-				 */
+
 
 				// Initialize event multicaster for this context.
+				// 初始化ApplicationEventMulticaster，
 				initApplicationEventMulticaster();
-				/*
-				 * 获取内部工厂，并实例化其APPLICATION_EVENT_MULTICASTER_BEAN_NAME字段对应的ApplicationEventMulticaster
-				 * 如果没有相应的ApplicationEventMulticaster，就new一个SimpleApplicationEventMulticaster
-				 */
 
 				// Initialize other special beans in specific context subclasses.
 				// 初始化一些特殊的bean，默认空实现
 				onRefresh();
 
 				// Check for listener beans and register them.
+				// 注册监听器
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				// 实例化所有非懒加载的单例bean
+				// 执行BeanPostProcessor
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
+				// 清空ResourceCaches并初始化LifecycleProcessor
+				// 发布容器刷新完成事件
 				finishRefresh();
 			}
 

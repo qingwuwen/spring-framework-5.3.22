@@ -55,6 +55,24 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.core.io.ResourceLoader
  */
+/*
+ * 为应用程序提供配置的中央接口。 这在应用程序运行时是只读的，但可能是 如果实现支持这一点，则重新加载。
+ *
+ * ApplicationContext提供:
+ * Bean工厂访问应用程序组件的方法。 继承自ListableBeanFactory。
+ * - 以通用方式加载文件资源的能力。 继承自org.springframework.core.io.ResourceLoader接口。
+ * - 向注册的监听发布事件的功能。 从ApplicationEventPublisher接口继承。
+ * - 解决消息的能力，支持国际化。 从MessageSource接口继承。
+ * - 从父上下文继承。后代上下文中的定义 将永远优先。
+ * 例如，这意味着单亲 上下文可以被整个web应用程序使用，而每个servlet都有 它自己的子上下文，独立于任何其他servlet的子上下文。
+ *
+ * 除了标准的org.springframework.beans.factory.BeanFactory 生命周期功能，应用程序上下文实现检测和调用
+ * ApplicationContextAware bean以及ResourceLoaderAware ApplicationEventPublisherAware和MessageSourceAware bean。
+ * 请参阅:
+ * ConfigurableApplicationContext,
+ * org.springframework.beans.factory.BeanFactory,
+ * org.springframework.core.io.ResourceLoader
+ */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
 

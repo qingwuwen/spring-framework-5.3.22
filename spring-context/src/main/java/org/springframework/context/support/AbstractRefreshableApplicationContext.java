@@ -62,6 +62,22 @@ import org.springframework.lang.Nullable;
  * @see FileSystemXmlApplicationContext
  * @see org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
+/**
+ * ApplicationContext实现的基类，这些实现应该支持对refresh（）的多次调用，每次都创建一个新的内部bean工厂实例。
+ * 通常（但不一定），这样的上下文将由一组配置位置驱动，以从中加载bean定义。
+ * 子类实现的唯一方法是loadBeanDefinitions，每次刷新时都会调用它。
+ * 一个具体的实现应该将bean定义加载到给定的DefaultListableBeanFactory中，通常委托给一个或多个特定的bean定义读取器。
+ * 请注意，WebApplicationContexts有一个类似的基类。
+ * org.springframework.web.context.support。AbstractRefreshableWebApplicationContext提供了相同的子类化策略，
+ * 但还预先实现了web环境的所有上下文功能。
+ * 还有一种预定义的方式来接收web上下文的配置位置。
+ * 这个基类的具体独立子类（以特定bean定义格式读取）是ClassPathXmlApplicationContext和FileSystemXmlApplicationContext，
+ * 它们都派生自公共AbstractXmlApplication上下文基类；
+ * org.springframework.context.annotation。AnnotationConfigApplicationContext支持@Configuration注释类作为bean定义的源。
+ *
+ * 自: 1.1.3
+ */
+
 public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
 
 	@Nullable
